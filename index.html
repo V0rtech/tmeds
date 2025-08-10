@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TRENCH MEDS</title>
+<meta name="theme-color" content="#0bb5e6" />
+<style>
+  :root{
+    --bg:#0bb5e6;
+    --shelf:#ffffff;
+    --lip:#e9eef7;
+    --glow:#37e3ff;
+    --accent:#7a5cff;
+
+    /* Bars */
+    --bar-bg:#103255;
+    --bar-edge:#2a527f;
+    --bar-fill:#ffd54a;
+    --bar-fill2:#f1c300;
+    --text:#e7f8ff;
+    --muted:#a6c7e7;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    color:#0b1220;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #16d3ff33, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #8df6ff22, transparent 60%),
+      var(--bg);
+  }
+
+  .wrap{max-width:1200px;margin-inline:auto;padding:28px 18px 80px}
+
+  /* Centered header */
+  header{ display:grid; place-items:center; margin-bottom:22px; text-align:center; }
+  .logo{
+    margin:0; font-weight:900; letter-spacing:.5px;
+    font-size: clamp(26px, 4vw, 44px);
+    color:#fff; text-shadow:0 2px 16px #0003;
+  }
+  .tag{ margin-top:6px; color:#e8fbff; font-size:14px; opacity:.9 }
+
+  .shelves{display:grid; gap:18px}
+
+  /* Shelf */
+  .shelf{
+    background:var(--shelf); border-radius:10px; padding:18px 14px 24px;
+    box-shadow: 0 10px 22px #0b123011, 0 2px 0 0 #ffffff inset, 0 -22px 40px #2087ff08 inset;
+    position:relative;
+  }
+  .shelf::after{
+    content:""; position:absolute; left:0; right:0; bottom:-10px; height:12px;
+    background: linear-gradient(#ffffff, var(--lip));
+    border-radius:0 0 12px 12px; box-shadow: 0 10px 24px #0b123022;
+  }
+
+  /* 5 items per shelf */
+  .rack{
+    display:grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap:18px;
+  }
+
+  .slot{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+
+  /* Product button has no visible box, image is the only thing shown */
+  .product{
+    width:100%;
+    aspect-ratio: 1 / 1;
+    display:grid; place-items:center;
+    background: transparent;
+    border:none; padding:0; margin:0;
+    cursor:pointer;
+  }
+  .product:focus{ outline:none }
+
+  /* The actual image */
+  .pill{
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+    display:block;
+    transition: transform .18s ease, filter .28s ease;
+    filter: drop-shadow(0 4px 10px rgba(11,18,32,.20));
+    pointer-events:none; /* keep click on the button container */
+    user-select:none;
+  }
+  .product:hover .pill,
+  .product:focus-visible .pill{
+    transform: translateY(-6px) scale(1.06);
+    filter:
+      drop-shadow(0 0 16px rgba(55,227,255,.55))
+      drop-shadow(0 10px 18px rgba(11,18,32,.25));
+  }
+
+  /* small label under each image */
+  .eink{
+    min-width:70%; text-align:center; font-size:12px; padding:6px 8px;
+    border-radius:7px; background:linear-gradient(#f6fbff, #e7f1ff);
+    box-shadow: inset 0 0 0 1px #d5e4f7; color:#2c3a52; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* bottom shelf content */
+  .bottom{ padding:18px; }
+  .bottom .rack{ grid-template-columns: 1fr auto auto; align-items:center }
+  .contract{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:linear-gradient(#0e1a2e,#0b1324); color:#c8f6ff; border-radius:12px; padding:12px 14px;
+    box-shadow: inset 0 0 0 1px #12233f, 0 10px 30px #0b123020;
+  }
+  .contract .label{ font-weight:700; letter-spacing:.3px; color:#82f7ff }
+  #addr{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:14px; padding:4px 8px; background:#0d1b31; border-radius:8px; }
+  .copy{ border:1px solid #233c66; background:#152948; color:#dffcff; border-radius:8px; padding:8px 10px; cursor:pointer; }
+  .copy:hover{ background:#1b3356 }
+  .icon{ width:46px; height:46px; display:grid; place-items:center; border-radius:12px; background:#0f1e36; border:1px solid #1c3156; transition:transform .2s ease, box-shadow .2s ease; }
+  .icon:hover{ transform: translateY(-2px); box-shadow: 0 0 24px 4px #5cf1ff33; }
+  .icon svg{ width:26px; height:26px; fill:#c9f7ff }
+
+  /* Overlay + LEFT-side sheet with smooth slide */
+  .modal{
+    position:fixed; inset:0; opacity:0; visibility:hidden;
+    background: rgba(4,17,35,0);
+    transition: opacity .45s ease, background .45s ease;
+    z-index:50;
+  }
+  .modal.show{ opacity:1; visibility:visible; background: rgba(4,17,35,.55); }
+
+  .sheet{
+    position:absolute; top:0; left:0; height:100%;
+    width:min(640px, 95vw);
+    border-radius: 0 12px 12px 0;
+    background:
+      radial-gradient(120% 180% at -20% -10%, #284b82, #0b1220 60%) padding-box,
+      linear-gradient(135deg, #60fbff, #7a5cff) border-box;
+    border-right:2px solid transparent;
+    color:var(--text);
+    box-shadow: 14px 0 60px #0009, 0 0 60px 10px #5cf1ff22 inset;
+    padding:22px 24px 26px;
+    transform: translateX(-100%);
+    transition: transform .55s cubic-bezier(.22,.61,.36,1);
+  }
+  .modal.show .sheet{ transform: translateX(0); }
+
+  .sheet header{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;
+  }
+  .sheet h3{ margin:0; font-size:24px; letter-spacing:.4px }
+  .close{ background:#111b31; border:1px solid #24407a; color:#c6ecff; border-radius:10px; padding:10px 12px; cursor:pointer; }
+  .close:hover{ background:#182547 }
+
+  /* Stat rows + bigger segmented bars */
+  .stats{ display:grid; gap:14px; margin-top:12px; }
+  .row{
+    display:grid; grid-template-columns: 210px 1fr 64px;
+    align-items:center; gap:14px;
+  }
+  .label{ font-size:18px; color:#e9f6ff; text-shadow:0 1px 0 #051d35; }
+  .meter{
+    height:26px;
+    background: linear-gradient(#0c2846, var(--bar-bg));
+    border:1px solid var(--bar-edge);
+    box-shadow: inset 0 2px 6px #0008, 0 1px 0 #3a6aa4;
+    border-radius:12px; position:relative; overflow:hidden;
+  }
+  .fill{
+    width:0%; height:100%;
+    background:
+      repeating-linear-gradient(90deg, var(--bar-fill) 0 9%, var(--bar-fill2) 9% 10%);
+    box-shadow: inset 0 -2px 2px #0005, 0 0 8px #ffd54a55;
+    border-right:2px solid #e6b400;
+    transition: width .9s cubic-bezier(.2,.8,.2,1);
+  }
+  .value{ justify-self:end; font-weight:800; color:#fff; letter-spacing:.3px; font-size:16px; }
+  .scale-note{ margin-top:8px; text-align:right; font-size:13px; color:var(--muted); }
+
+  footer{ margin-top:18px; text-align:center; font-size:12px; color:#e9fbffbb }
+
+  @media (max-width:900px){ .rack{ grid-template-columns: repeat(4, minmax(120px,1fr)); } }
+  @media (max-width:640px){ .rack{ grid-template-columns: repeat(3, minmax(110px,1fr)); } .row{grid-template-columns:160px 1fr 56px} .label{font-size:16px} }
+  @media (max-width:440px){ .rack{ grid-template-columns: repeat(2, minmax(120px,1fr)); } .row{grid-template-columns:140px 1fr 48px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="logo">TRENCH MEDS</h1>
+      <div class="tag">The pharmacy of the chain.</div>
+    </header>
+
+    <main class="shelves" aria-label="Shelves of meds">
+      <!-- Shelf 1 -->
+      <section class="shelf">
+        <div class="rack">
+          <div class="slot">
+            <button class="product" data-id="adderall" aria-label="Adderall">
+              <img class="pill" src="./img/adderall.png" alt="Adderall" loading="lazy">
+            </button>
+            <div class="eink">Adderall</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="ritalin" aria-label="Ritalin">
+              <img class="pill" src="./img/ritalin.png" alt="Ritalin" loading="lazy">
+            </button>
+            <div class="eink">Ritalin</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="meth" aria-label="Meth">
+              <img class="pill" src="./img/meth.png" alt="Meth" loading="lazy">
+            </button>
+            <div class="eink">Meth</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="monster" aria-label="Monster">
+              <img class="pill" src="./img/monster.png" alt="Monster" loading="lazy">
+            </button>
+            <div class="eink">Monster</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="redbull" aria-label="Redbull">
+              <img class="pill" src="./img/redbull.png" alt="Redbull" loading="lazy">
+            </button>
+            <div class="eink">Redbull</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shelf 2 -->
+      <section class="shelf">
+        <div class="rack">
+          <div class="slot">
+            <button class="product" data-id="weed" aria-label="Weed">
+              <img class="pill" src="./img/weed.png" alt="Weed" loading="lazy">
+            </button>
+            <div class="eink">Weed</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="beer" aria-label="Beer">
+              <img class="pill" src="./img/beer.png" alt="Beer" loading="lazy">
+            </button>
+            <div class="eink">Beer</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="xanax" aria-label="Xanax">
+              <img class="pill" src="./img/xanax.png" alt="Xanax" loading="lazy">
+            </button>
+            <div class="eink">Xanax</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="trenchosterone" aria-label="Trenchosterone">
+              <img class="pill" src="./img/trenchosterone.png" alt="Trenchosterone" loading="lazy">
+            </button>
+            <div class="eink">Trenchosterone</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="sendameme" aria-label="Sendameme">
+              <img class="pill" src="./img/sendameme.png" alt="Sendameme" loading="lazy">
+            </button>
+            <div class="eink">Sendameme</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shelf 3 -->
+      <section class="shelf">
+        <div class="rack">
+          <div class="slot">
+            <button class="product" data-id="mystery_pill" aria-label="Mystery Closet Pill">
+              <img class="pill" src="./img/mystery-closet-pill.png" alt="Mystery Closet Pill" loading="lazy">
+            </button>
+            <div class="eink">Mystery Closet Pill</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="coffee" aria-label="Coffee">
+              <img class="pill" src="./img/coffee.png" alt="Coffee" loading="lazy">
+            </button>
+            <div class="eink">Coffee</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="zyns" aria-label="Zyns">
+              <img class="pill" src="./img/zyns.png" alt="Zyns" loading="lazy">
+            </button>
+            <div class="eink">Zyns</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="cigarettes" aria-label="Cigarettes">
+              <img class="pill" src="./img/cigarettes.png" alt="Cigarettes" loading="lazy">
+            </button>
+            <div class="eink">Cigarettes</div>
+          </div>
+          <div class="slot">
+            <button class="product" data-id="vape" aria-label="Vape">
+              <img class="pill" src="./img/vape.png" alt="Vape" loading="lazy">
+            </button>
+            <div class="eink">Vape</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom shelf: contract + socials only -->
+      <section class="shelf bottom" aria-label="Bottom shelf">
+        <div class="rack">
+          <div class="contract">
+            <span class="label">Contract</span>
+            <code id="addr">0x0000000000000000000000000000000000000000</code>
+            <button class="copy" id="copy">Copy</button>
+          </div>
+
+          <a class="icon" id="tw" href="https://twitter.com/" target="_blank" rel="noopener" aria-label="Twitter">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 3H17l-4.6 6.5L7.8 3H3.3l6.1 9.1L3 21h3.7l4.9-7 4.7 7h4.5l-6.4-9.5L20.7 3z"/></svg>
+          </a>
+
+          <a class="icon" id="dex" href="https://dexscreener.com/" target="_blank" rel="noopener" aria-label="Dexscreener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2v16H3zM8 12h2v8H8zM13 8h2v12h-2zM18 5h2v15h-2z"/></svg>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>Not financial or medical advice. Pure meme energy.</footer>
+  </div>
+
+  <!-- Left-side modal sheet -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="hud-title">
+    <div class="sheet">
+      <header>
+        <h3 id="hud-title">Item Stats</h3>
+        <button class="close" id="closeModal" aria-label="Close">Close</button>
+      </header>
+      <div class="stats" id="statsGrid"></div>
+      <div class="scale-note">Scale: 0–10 (segmented)</div>
+    </div>
+  </div>
+
+<script>
+  // Fixed stat order
+  const STAT_KEYS = [
+    "Trenching","Jeeting","Rug Protection","Holding Power","Scanning","Motion"
+  ];
+
+  // Example stat values (0–10). Adjust as you like.
+  const ITEMS = {
+    adderall:{ name:"Adderall", stats:{ Trenching:8, Jeeting:3, "Rug Protection":5, "Holding Power":9, Scanning:7, Motion:8 } },
+    ritalin:{ name:"Ritalin", stats:{ Trenching:7, Jeeting:3, "Rug Protection":5, "Holding Power":8, Scanning:7, Motion:7 } },
+    meth:{ name:"Meth", stats:{ Trenching:10, Jeeting:1, "Rug Protection":2, "Holding Power":5, Scanning:6, Motion:10 } },
+    monster:{ name:"Monster", stats:{ Trenching:6, Jeeting:4, "Rug Protection":4, "Holding Power":6, Scanning:5, Motion:7 } },
+    redbull:{ name:"Redbull", stats:{ Trenching:6, Jeeting:4, "Rug Protection":4, "Holding Power":6, Scanning:5, Motion:7 } },
+
+    weed:{ name:"Weed", stats:{ Trenching:5, Jeeting:6, "Rug Protection":5, "Holding Power":6, Scanning:4, Motion:3 } },
+    beer:{ name:"Beer", stats:{ Trenching:4, Jeeting:7, "Rug Protection":3, "Holding Power":5, Scanning:3, Motion:2 } },
+    xanax:{ name:"Xanax", stats:{ Trenching:3, Jeeting:2, "Rug Protection":7, "Holding Power":8, Scanning:3, Motion:1 } },
+    trenchosterone:{ name:"Trenchosterone", stats:{ Trenching:9, Jeeting:1, "Rug Protection":8, "Holding Power":9, Scanning:6, Motion:7 } },
+    sendameme:{ name:"Sendameme", stats:{ Trenching:7, Jeeting:5, "Rug Protection":6, "Holding Power":6, Scanning:8, Motion:6 } },
+
+    mystery_pill:{ name:"Mystery Closet Pill", stats:{ Trenching:8, Jeeting:8, "Rug Protection":1, "Holding Power":2, Scanning:2, Motion:6 } },
+    coffee:{ name:"Coffee", stats:{ Trenching:6, Jeeting:4, "Rug Protection":4, "Holding Power":7, Scanning:6, Motion:7 } },
+    zyns:{ name:"Zyns", stats:{ Trenching:5, Jeeting:5, "Rug Protection":4, "Holding Power":6, Scanning:5, Motion:5 } },
+    cigarettes:{ name:"Cigarettes", stats:{ Trenching:3, Jeeting:6, "Rug Protection":2, "Holding Power":4, Scanning:3, Motion:2 } },
+    vape:{ name:"Vape", stats:{ Trenching:4, Jeeting:6, "Rug Protection":3, "Holding Power":4, Scanning:4, Motion:3 } }
+  };
+
+  const modal = document.getElementById('modal');
+  const statsGrid = document.getElementById('statsGrid');
+  const hudTitle = document.getElementById('hud-title');
+  const closeBtn = document.getElementById('closeModal');
+
+  function clamp(v){ v = Number(v)||0; return Math.max(0, Math.min(10, v)); }
+
+  function barRow(label, value, idx){
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const name = document.createElement('div');
+    name.className = 'label';
+    name.textContent = label;
+
+    const meter = document.createElement('div');
+    meter.className = 'meter';
+
+    const fill = document.createElement('div');
+    fill.className = 'fill';
+    const pct = clamp(value) * 10;
+    fill.dataset.target = pct;           // target width
+    fill.style.width = '0%';             // start at 0
+    fill.style.transitionDelay = `${idx*90}ms`; // nice cascade
+    meter.appendChild(fill);
+
+    const val = document.createElement('div');
+    val.className = 'value';
+    val.textContent = `${clamp(value)}/10`;
+
+    row.append(name, meter, val);
+    return row;
+  }
+
+  function animateBars(){
+    // force reflow so widths animate from 0
+    statsGrid.offsetHeight; // no-op read
+    statsGrid.querySelectorAll('.fill').forEach(f=>{
+      f.style.width = (f.dataset.target || 0) + '%';
+    });
+  }
+
+  function openModalFor(id){
+    const item = ITEMS[id];
+    if(!item) return;
+    hudTitle.textContent = item.name + " — Stats";
+    statsGrid.innerHTML = '';
+    STAT_KEYS.forEach((k,i)=>{
+      const v = (item.stats && k in item.stats) ? item.stats[k] : 0;
+      statsGrid.appendChild(barRow(k, v, i));
+    });
+    modal.classList.add('show');
+    requestAnimationFrame(animateBars);
+    closeBtn.focus();
+  }
+
+  // Click handlers
+  document.querySelectorAll('.product').forEach(btn=>{
+    btn.addEventListener('click', ()=> openModalFor(btn.dataset.id));
+  });
+
+  function closeModal(){
+    modal.classList.remove('show');
+    // reset bars so they animate next time
+    statsGrid.querySelectorAll('.fill').forEach(f=> f.style.width = '0%');
+  }
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+  window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal(); });
+
+  // Copy contract + links
+  const CONTRACT = "0x0000000000000000000000000000000000000000"; // replace
+  const TWITTER  = "https://twitter.com/yourhandle";              // replace
+  const DEX      = "https://dexscreener.com/solana/yourpair";     // replace
+  document.getElementById('addr').textContent = CONTRACT;
+  document.getElementById('tw').href = TWITTER;
+  document.getElementById('dex').href = DEX;
+</script>
+</body>
+</html>
