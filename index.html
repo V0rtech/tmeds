@@ -434,12 +434,57 @@
   window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal(); });
 
   // Copy contract + links
-  const CONTRACT = "0x0000000000000000000000000000000000000000"; // replace
-  const TWITTER  = "https://twitter.com/yourhandle";              // replace
-  const DEX      = "https://dexscreener.com/solana/yourpair";     // replace
-  document.getElementById('addr').textContent = CONTRACT;
-  document.getElementById('tw').href = TWITTER;
-  document.getElementById('dex').href = DEX;
+// Copy contract + links
+const CONTRACT = "0x0000000000000000000000000000000000000000"; // replace
+const TWITTER  = "https://twitter.com/yourhandle";              // replace
+const DEX      = "https://dexscreener.com/solana/yourpair";     // replace
+
+document.getElementById('addr').textContent = CONTRACT;
+document.getElementById('tw').href = TWITTER;
+document.getElementById('dex').href = DEX;
+
+// ===== Copy contract functionality =====
+const copyBtn = document.getElementById('copy');
+const addrEl  = document.getElementById('addr');
+
+async function copyText(text){
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  try { document.execCommand('copy'); }
+  finally { document.body.removeChild(ta); }
+}
+
+copyBtn.addEventListener('click', async () => {
+  const text = (addrEl?.textContent || '').trim();
+  if (!text) return;
+
+  const old = copyBtn.textContent;
+  copyBtn.disabled = true;
+
+  try {
+    await copyText(text);
+    copyBtn.textContent = 'Copied!';
+  } catch (e) {
+    console.error(e);
+    copyBtn.textContent = 'Copy failed';
+  } finally {
+    setTimeout(() => {
+      copyBtn.textContent = old;
+      copyBtn.disabled = false;
+    }, 1200);
+  }
+});
+
 </script>
 </body>
 </html>
